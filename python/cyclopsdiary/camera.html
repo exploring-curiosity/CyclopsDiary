@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>CyclopsDiary camera</title>
+<style>
+  :root { --bg:#0f1115; --panel:#181b21; --text:#e8eaed; --muted:#9aa0a6; --go:#1f9d55; --stop:#d93025; --line:#2a2e36; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.4 -apple-system, system-ui, sans-serif;
+         min-height:100dvh; display:flex; flex-direction:column; padding:env(safe-area-inset-top) 16px 16px; }
+  h1 { font-size:18px; font-weight:600; margin:14px 0 10px; }
+  .row { display:flex; gap:10px; align-items:center; }
+  select { flex:1; font:inherit; color:var(--text); background:var(--panel); border:1px solid var(--line);
+           border-radius:10px; padding:12px; }
+  video { width:100%; flex:1; min-height:0; max-height:62dvh; object-fit:contain; background:#000;
+          border-radius:12px; margin:12px 0; }
+  button { width:100%; font-family:inherit; font-size:18px; font-weight:600; line-height:1; color:#fff;
+           background:var(--go); border:0; border-radius:14px; padding:18px; }
+  button.rec { background:var(--stop); }
+  button:disabled { opacity:.5; }
+  #status { color:var(--muted); font-size:14px; margin-top:10px; min-height:2.8em; font-variant-numeric:tabular-nums; }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--stop); margin-right:6px;
+         animation:blink 1s infinite; }
+  @keyframes blink { 50% { opacity:.2; } }
+</style>
+</head>
+<body>
+<h1>CyclopsDiary camera</h1>
+<div class="row"><select id="source" aria-label="Camera"><option>loading cameras…</option></select></div>
+<video id="preview" autoplay muted playsinline></video>
+<button id="go" disabled>Start</button>
+<div id="status">Hold the phone in one orientation while it records.</div>
+<script>
+const token = new URLSearchParams(location.search).get("t") || "";
+const $ = id => document.getElementById(id);
+const say = html => { $("status").innerHTML = html; };
+let rec = null, ws = null, stream = null, lock = null, t0 = 0, sent = 0, steps = 0, ticker = null;
+
+function pickMime() {
+  const kinds = ["video/webm;codecs=vp8", "video/webm;codecs=vp9", "video/webm",
+                 "video/mp4;codecs=avc1.42E01E", "video/mp4"];
+  return kinds.find(k => window.MediaRecorder && MediaRecorder.isTypeSupported(k)) || "";
+}
+
+async function loadSources() {
+  const r = await fetch("sources?t=" + encodeURIComponent(token));
+  if (!r.ok) { say("This link has no valid token. Open the link printed by <code>serve --live</code>."); return; }
+  const rows = await r.json();
+  $("source").innerHTML = rows.map(s =>
+    `<option value="${s._id}">${s._id}${s.person ? " — " + s.person : ""}${s.kind ? " (" + s.kind + ")" : ""}</option>`).join("");
+  const last = localStorage.getItem("cyclopsdiary.source");
+  if (last && rows.some(s => s._id === last)) $("source").value = last;
+  $("go").disabled = !rows.length;
+}
+
+function mb(n) { return (n / 1e6).toFixed(1) + " MB"; }
+function tick() {
+  const s = Math.floor((Date.now() - t0) / 1000);
+  say(`<span class="dot"></span>recording ${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`
+      + ` · ${mb(sent)} sent · ${steps} steps read`);
+}
+
+async function start() {
+  if (!window.isSecureContext) { say("The camera needs an https link."); return; }
+  const mime = pickMime();
+  if (!mime) { say("This browser cannot record video."); return; }
+  $("go").disabled = true;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: {
+      facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } });
+  } catch (e) { say("No camera: " + e.message); $("go").disabled = false; return; }
+  $("preview").srcObject = stream;
+  const source = $("source").value;
+  localStorage.setItem("cyclopsdiary.source", source);
+  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + location.pathname.replace(/[^/]*$/, "")
+                     + "ingest?t=" + encodeURIComponent(token));
+  ws.onmessage = ev => {
+    const m = JSON.parse(ev.data);
+    if (m.error) { say("Refused: " + m.error); cleanup(); }
+    if (m.steps !== undefined) { steps = m.steps; }
+    if (m.done) { say(`Saved ${m.done.footage}: ${m.done.steps} steps, ${m.done.duration_s.toFixed(1)} s`
+                      + (m.done.error ? ` (ended early: ${m.done.error})` : "") + "."); cleanup(); }
+  };
+  ws.onclose = () => { if (rec) { say("Connection lost; what was sent is saved."); cleanup(); } };
+  ws.onopen = () => {
+    rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 2000000 });
+    rec.ondataavailable = e => { if (e.data.size && ws.readyState === 1) { ws.send(e.data); sent += e.data.size; } };
+    rec.onstop = () => { if (ws.readyState === 1) ws.send(JSON.stringify({ stop: true })); say("Finishing the read…"); };
+    t0 = Date.now(); sent = 0; steps = 0;
+    rec.start(1000);
+    ws.send(JSON.stringify({ source, started_at: t0, mime }));
+    ticker = setInterval(tick, 500);
+    $("go").textContent = "Stop"; $("go").classList.add("rec"); $("go").disabled = false;
+    navigator.wakeLock?.request("screen").then(l => { lock = l; }).catch(() => {});
+  };
+}
+
+function stop() {
+  $("go").disabled = true;
+  clearInterval(ticker);
+  if (rec && rec.state !== "inactive") rec.stop();
+  rec = null;
+}
+
+function cleanup() {
+  clearInterval(ticker);
+  if (rec && rec.state !== "inactive") rec.stop();
+  rec = null;
+  stream?.getTracks().forEach(t => t.stop());
+  stream = null;
+  $("preview").srcObject = null;
+  lock?.release().catch(() => {}); lock = null;
+  if (ws && ws.readyState <= 1) ws.close();
+  ws = null;
+  $("go").textContent = "Start"; $("go").classList.remove("rec"); $("go").disabled = false;
+}
+
+$("go").onclick = () => (rec ? stop() : start());
+loadSources().catch(e => say("Cannot reach the service: " + e.message));
+</script>
+</body>
+</html>

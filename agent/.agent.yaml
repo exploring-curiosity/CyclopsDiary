@@ -1,0 +1,61 @@
+# CyclopsDiary's agent (Strands, scaffolded by the AWS Agent Development Toolkit, `adt`).
+# src/agent.py reads this file; `adt dev` serves the agent with a chat UI.
+
+name: cyclopsdiary
+system_prompt: |
+  You are CyclopsDiary, the memory of what the cameras in this workspace saw. You have four read-only
+  tools: find_object (which objects answer to a name), object_belief (where one is believed to be now,
+  with the clip), at_place (what was last seen at a place) and between (what happened between two times).
+  Each result carries `answer`, a sentence already worded from what was found: say it, adding only what
+  the result shows. Word answers by status: seen, believed (seen a while ago: probably still there), or
+  "I haven't seen it". An empty result means "I don't know", never a guess. Keep what the person tells
+  you with add_memory and look back with search_memory. The person is on glasses or a phone: reply in one
+  or two short sentences.
+
+# -----------------------------------------------------------------------------
+# Model: from OpenRouter, through Strands' OpenAI-compatible provider
+# (strands-agents[openai]). AGENT_MODEL and OPENROUTER_API_KEY come from the
+# project's .env: keys ending in _env are read from the environment when the
+# agent starts, so no key is ever written here.
+# The agent's model is never Claude or the Anthropic API (owner's rule).
+# -----------------------------------------------------------------------------
+provider:
+  class: "strands.models.openai.OpenAIModel"
+  kwargs:
+    model_id_env: AGENT_MODEL
+    client_args:
+      base_url: "https://openrouter.ai/api/v1"
+      api_key_env: OPENROUTER_API_KEY
+    params:
+      temperature: 0.2
+      max_tokens: 512         # reasoning is off; a reply is a sentence or two (a longer one is slower)
+      extra_body:             # OpenRouter, measured (ledger L-11): reasoning off and Together first answer
+        reasoning:            # a tool call in ~0.3 s; default routing took 1-7 s and sometimes hit a
+          enabled: false      # rate-limited provider
+        provider:
+          order: ["together", "deepinfra", "baseten"]
+          allow_fallbacks: true
+
+# -----------------------------------------------------------------------------
+# MCP servers: the Cosmos side's tools, run by the model's own Python (the main
+# environment, which has the search). Started from agent/, hence the ../ path.
+# -----------------------------------------------------------------------------
+mcp_servers:
+  - name: cyclopsdiary
+    transport: stdio
+    command: ["../bin/cyclopsdiary", "mcp", "--workspace", "home"]
+
+# -----------------------------------------------------------------------------
+# Memory in MongoDB (src/cyclops.py). The conversation, the person's notes and
+# the workspace context all live in the project's database (MONGODB_URI in the
+# project's .env).
+# -----------------------------------------------------------------------------
+cyclopsdiary:
+  workspace: home
+  person: person-a          # whose conversation and notes these are
+  session: daily            # "daily": one conversation per person per day; or a fixed session id
+  window: 40                # messages the model sees; older ones stay in MongoDB, found by search_memory
+  extract: false            # true: every 5 turns the model distils the conversation into notes, but that turn
+                            # waits for it (a model call); off for realtime, notes come from add_memory
+  hedge_after_s: 0.8        # no first token by then: the same request to the next provider too, first to
+                            # start wins (first tokens measured 0.22-0.48 s, with stalls of 3.6-3.9 s)

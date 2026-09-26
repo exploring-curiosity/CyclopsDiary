@@ -1,0 +1,18 @@
+# CyclopsDiary on macOS / Apple Silicon: the versions it was run and tested with
+# (2026-09-26). The engine's own pins are requirements.txt and
+# requirements-local.txt; Cosmos3-Edge also needs the transformers-5 side
+# stack in data/stacks/d40 (not in git -- see data/stacks/README.md).
+pymongo==4.15.4          # MongoDB / Atlas driver
+dnspython==2.8.0         # mongodb+srv:// connection strings (Atlas)
+certifi==2025.1.31       # the CA bundle used for Atlas TLS
+python-dotenv==1.2.1     # .env
+mcp==1.26.0              # bin/cyclopsdiary mcp (the agent's tools over MCP)
+numpy==2.2.5
+tqdm==4.67.1
+av==18.0.0               # decode (libav), frame index, display rotation
+opencv-python-headless==5.0.0.93   # frame resize only
+mlx==0.32.0              # the language model's arithmetic
+torch==2.7.1             # the vision tower
+pyarrow==24.0.0
+fsspec==2026.7.0
+pytest==9.1.1

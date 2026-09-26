@@ -1,0 +1,34 @@
+{
+  "what": "Labels and the fixed protocol for evaluating objects.py (identification by the world model's own words, and tracking through time) on the two sample phone clips. Written before the run.",
+  "labelled_by": "Claude, reading 2 fps frames (t = i and i + 0.5 s) of the original files, 2026-09-26; step i covers [i, i+1) s of its footage. 1 = in view in either frame, 0 = not, null = cannot tell (not scored).",
+  "footage": {
+    "c2ebb344dc6ecdb2744e": "phone-a (person-a), iPhone 16, sample_data/IMG_2658.MOV, 7 steps",
+    "f3f4844fb81e0af68346": "phone-b (person-b), Pixel 9 Pro, sample_data/PXL_20260926_151010310.mp4, 10 steps"
+  },
+  "visible": {
+    "keys":     {"c2ebb344dc6ecdb2744e": [1, 1, 1, 1, 1, 1, 1],          "f3f4844fb81e0af68346": [1, 1, 1, 0, null, 1, 1, 1, 1, 1]},
+    "laptop":   {"c2ebb344dc6ecdb2744e": [0, 0, 1, 1, 1, 1, 1],          "f3f4844fb81e0af68346": [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]},
+    "can":      {"c2ebb344dc6ecdb2744e": [0, 0, 0, 1, 1, 1, 1],          "f3f4844fb81e0af68346": [1, 0, 0, 1, null, 0, 0, 0, 0, 0]},
+    "jacket":   {"c2ebb344dc6ecdb2744e": [0, 0, null, 1, 1, 1, 1],       "f3f4844fb81e0af68346": [0, 0, 0, 0, 1, 1, 1, 1, 1, 1]},
+    "backpack": {"c2ebb344dc6ecdb2744e": [0, 0, null, 0, 0, 0, 0],       "f3f4844fb81e0af68346": [0, 0, 0, 0, 1, null, 0, 0, 0, 0]},
+    "camera":   {"c2ebb344dc6ecdb2744e": [0, 0, 0, 0, 0, 1, 1],          "f3f4844fb81e0af68346": [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]}
+  },
+  "absent": ["wallet", "umbrella", "scissors", "remote", "toothbrush", "banana", "book", "mug"],
+  "keys_location": {
+    "note": "where the keys are during each step: floor / hand / table / chair; null = out of view",
+    "c2ebb344dc6ecdb2744e": ["floor", "hand", "hand", "hand", "table", "table", "table"],
+    "f3f4844fb81e0af68346": ["table", "table", "hand", null, null, "chair", "chair", "chair", "chair", "chair"]
+  },
+  "place_lexicon": {
+    "note": "the first of a sighting's place words (the model's own top words there) found here names its location; none found = unknown",
+    "floor": ["floor", "floors", "wooden", "wood", "hardwood", "laminate", "parquet", "planks", "tiles"],
+    "table": ["table", "marble", "desk", "countertop", "counter", "tabletop", "nightstand"],
+    "chair": ["chair", "cushion", "cush", "seat", "jacket", "patterned", "fabric", "upholstered", "armchair", "draped", "sofa"],
+    "hand": ["hand", "hands", "fingers", "holding", "palm", "wrist", "arm", "grip"]
+  },
+  "negatives": {
+    "wiring-cam-20260926T182226809": "lastseen_smoke, 12 steps of a synthetic test pattern (no objects): every label 0",
+    "robot": "lastseen_smoke home, 130 steps of two AgiBot head-camera clips; the video lives outside this tree, so these are unlabelled distractors: hits there are counted, not scored"
+  },
+  "metrics": "per object name, the steps ranked by the name score: P@1 and P@support over the labelled steps; the tracker's own decision (score above corpus.split's cut): step precision and recall; absent names: how many produce any sighting. Through time: the keys' last-known location after each clip lands (serve's granularity) and after every step (a stricter replay), against the location of the last step the keys were in view."
+}

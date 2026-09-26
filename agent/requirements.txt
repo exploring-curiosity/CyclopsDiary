@@ -1,0 +1,11 @@
+# .venv-agent (the agent's own environment; the model's environment is left alone)
+strands-agents[openai]==1.57.1   # openai 2.54.0: the OpenRouter provider
+strands-agents-tools==0.8.9
+strands-agents-mcp-server==0.3.0
+mcp==2.1.1
+pymongo==4.18.2
+certifi
+python-dotenv
+pyyaml
+# agent-dev-toolkit: pip install "git+https://github.com/awslabs/agent-dev-toolkit.git@a32dc7569dfdc8db3d9414a5afcd3ea06f23ec2d"
+#   (archived by AWS on 2026-07-06)

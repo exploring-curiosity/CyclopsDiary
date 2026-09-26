@@ -1,0 +1,115 @@
+# CyclopsDiary: only the code the system needs is committed.
+# Everything is ignored unless it is listed below. Left out on purpose: the partner's object tracker
+# (objecttracker/, CyclopsDiary-ObjectTracker/), raw footage (sample_data/, inbox/, live/), model weights
+# and the side stack (data/, models/), local databases and logs (.local/, eval_logs/), working notes
+# (docs/, CLAUDE.md) and the rest of the engine's tree.
+
+/*
+
+!/.gitignore
+!/README.md
+!/LICENSE
+!/System_Architecture_Overview_Diagram.webp
+!/.env.example
+!/requirements-cyclopsdiary.txt
+!/pytest.ini
+
+# the command line: bin/cyclopsdiary
+!/bin/
+/bin/*
+!/bin/cyclopsdiary
+
+# the system: ingest, memory, trackers and objects, queries, the worker, the stage's API, the agent's tools
+!/python/
+/python/*
+!/python/cyclopsdiary/
+# a YOLOE experiment that is not wired in
+/python/cyclopsdiary/yoloe.py
+
+# the engine modules CyclopsDiary loads: the world model's continuous read (cosmos3, cosmos3_mlx), the
+# output-head search (headsearch, eventsearch), the relative cut (corpus), and what those import
+!/python/elidedb/
+/python/elidedb/*
+!/python/elidedb/__init__.py
+!/python/elidedb/action_channel.py
+!/python/elidedb/action_probe.py
+!/python/elidedb/ann.py
+!/python/elidedb/bptree.py
+!/python/elidedb/connect.py
+!/python/elidedb/context.py
+!/python/elidedb/corpus.py
+!/python/elidedb/cosmos3.py
+!/python/elidedb/cosmos3_mlx.py
+!/python/elidedb/cracked.py
+!/python/elidedb/ctxprune.py
+!/python/elidedb/ctxtower.py
+!/python/elidedb/derive.py
+!/python/elidedb/device.py
+!/python/elidedb/embeddings.py
+!/python/elidedb/eventsearch.py
+!/python/elidedb/fdnnv2.py
+!/python/elidedb/fdnnvideo.py
+!/python/elidedb/fftools.py
+!/python/elidedb/fusion.py
+!/python/elidedb/headsearch.py
+!/python/elidedb/lexicon.py
+!/python/elidedb/log.py
+!/python/elidedb/motion.py
+!/python/elidedb/objects.py
+!/python/elidedb/pe.py
+!/python/elidedb/rerank.py
+!/python/elidedb/sig2.py
+!/python/elidedb/store.py
+!/python/elidedb/streamtext.py
+!/python/elidedb/subjects.py
+!/python/elidedb/verified.py
+!/python/elidedb/vid.py
+!/python/elidedb/video.py
+!/python/elidedb/window.py
+
+# the agent (Strands): MongoDB as its session, memory and context; its tools over MCP
+!/agent/
+/agent/bench_*.py
+/agent/profile_turn.py
+
+# the stage's page (Vite + React); install with npm, build output stays out
+!/ui/
+/ui/node_modules/
+/ui/dist/
+
+# tests
+!/tests/
+/tests/*
+!/tests/conftest.py
+!/tests/test_cyclopsdiary.py
+!/tests/test_headsearch.py
+!/tests/test_cosmos3_mlx.py
+
+# the local test database, and the object evaluations
+!/scripts/
+/scripts/*
+!/scripts/mongo_local.sh
+!/scripts/eval_objects.py
+!/scripts/eval_objects_live.py
+!/eval/
+/eval/*
+!/eval/cyclopsdiary_objects.json
+
+# how to build the model's side stack (the stack itself is not in git)
+!/data/
+/data/*
+!/data/stacks/
+/data/stacks/*
+!/data/stacks/README.md
+
+# never, anywhere
+__pycache__/
+*.pyc
+.DS_Store
+.env
+.env.local
+node_modules/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.log
