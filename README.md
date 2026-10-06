@@ -1,5 +1,3 @@
-Claude Session Log - https://youtu.be/eJxuouv2Qa0
-
 # CyclopsDiary
 
 **Long-horizon memory for a world model.** A world model watching a camera remembers about twenty seconds.
